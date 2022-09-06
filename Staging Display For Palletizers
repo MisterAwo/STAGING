@@ -1,0 +1,43 @@
+WITH [SPLIT CASES] AS (
+    SELECT
+        DISTINCT O.orderId 'REF',
+        O.palletPosition 'STAGE',
+        COUNT (DISTINCT P.cartonSeq) 'SPLIT CASES'
+    FROM
+        NuminaData_BaseTables.dbo.HK_Numina_psOrders_raw O
+        Join NuminaData_BaseTables.dbo.HK_Numina_psPicks_raw P on O.orderId = P.orderId
+    WHERE
+        O.palletPosition <> ''
+        AND P.uom = 'EA'
+    GROUP BY
+        O.orderId,
+        O.palletPosition,
+        O.numCartons,
+        P.uom
+),
+[FULL CASES] AS (
+    SELECT
+        DISTINCT O.orderId 'REF',
+        O.palletPosition 'STAGE',
+        COUNT (DISTINCT P.cartonSeq) 'FULL CASES'
+    FROM
+        NuminaData_BaseTables.dbo.HK_Numina_psOrders_raw O
+        Join NuminaData_BaseTables.dbo.HK_Numina_psPicks_raw P on O.orderId = P.orderId
+    WHERE
+        O.palletPosition <> ''
+        AND P.uom = 'CS'
+    GROUP BY
+        O.orderId,
+        O.palletPosition,
+        O.numCartons,
+        P.uom
+)
+SELECT
+    S.REF,
+    S.STAGE,
+    S.[SPLIT CASES] 'BOXES',
+    F.[FULL CASES] 'CASES',
+    S.[SPLIT CASES] + F.[FULL CASES] 'TOTAL CARTONS'
+FROM
+    [SPLIT CASES] S
+    JOIN [FULL CASES] F ON S.REF = F.REF
